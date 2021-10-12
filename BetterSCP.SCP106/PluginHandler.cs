@@ -24,10 +24,10 @@ namespace Mistaken.BetterSCP.SCP106
         public override string Prefix => "MBSCP-106";
 
         /// <inheritdoc/>
-        public override PluginPriority Priority => PluginPriority.Higher;
+        public override PluginPriority Priority => PluginPriority.Default;
 
         /// <inheritdoc/>
-        public override Version RequiredExiledVersion => new Version(2, 11, 0);
+        public override Version RequiredExiledVersion => new Version(3, 0, 3);
 
         /// <inheritdoc/>
         public override void OnEnabled()

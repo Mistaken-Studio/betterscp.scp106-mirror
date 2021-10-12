@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Exiled.API.Enums;
 using Exiled.API.Features;
+using MEC;
 using Mirror;
 using Mistaken.API;
 using Mistaken.API.Diagnostics;
@@ -151,6 +152,23 @@ namespace Mistaken.BetterSCP.SCP106
         {
             Log.Info("Setting Rooms");
             this.SetRooms();
+            this.RunCoroutine(this.VisiblityHandler(), "VisiblityHandler");
+        }
+
+        private IEnumerator<float> VisiblityHandler()
+        {
+            yield return Timing.WaitForSeconds(1);
+            while (Round.IsStarted)
+            {
+                yield return Timing.WaitForSeconds(1);
+                foreach (var player in RealPlayers.List)
+                {
+                    if (player.IsHuman && player.Position.y < -1900)
+                        player.IsInvisible = true;
+                    else
+                        player.IsInvisible = false;
+                }
+            }
         }
 
         private void Player_EscapingPocketDimension(Exiled.Events.EventArgs.EscapingPocketDimensionEventArgs ev)
