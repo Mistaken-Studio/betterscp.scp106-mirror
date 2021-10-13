@@ -173,6 +173,7 @@ namespace Mistaken.BetterSCP.SCP106
             Player scp = null;
             foreach (var player in RealPlayers.Get(RoleType.Scp106))
             {
+                player.ReferenceHub.scp106PlayerScript.UserCode_CmdMakePortal();
                 scp = player;
                 this.cooldown.Add(player.Id);
                 this.CallDelayed(25, () => this.cooldown.Remove(player.Id), "LockStart");
