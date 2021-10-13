@@ -163,6 +163,8 @@ namespace Mistaken.BetterSCP.SCP106
             this.lastRooms.Clear();
             this.inTeleportExecution.Clear();
             this.RunCoroutine(this.LockStart(), "LockStart");
+
+            Server.Host.ReferenceHub.scp106PlayerScript.SetPortalPosition(Vector3.zero, new Vector3(117, 976, 40));
         }
 
         private IEnumerator<float> LockStart()
@@ -263,8 +265,7 @@ namespace Mistaken.BetterSCP.SCP106
             if (ev.Player.GetEffectActive<CustomPlayerEffects.Ensnared>())
             {
                 ev.IsAllowed = false;
-                if (Round.ElapsedTime.TotalSeconds > 25)
-                    ev.Player.SendConsoleMessage("[106] Ensnared active | Code: 3.2", "red");
+                ev.Player.SendConsoleMessage("[106] Ensnared active | Code: 3.2", "red");
                 return;
             }
 
@@ -314,20 +315,18 @@ namespace Mistaken.BetterSCP.SCP106
             player.ReferenceHub.playerEffectsController.EnableEffect<CustomPlayerEffects.Ensnared>(7.7f);
             player.ReferenceHub.playerEffectsController.EnableEffect<CustomPlayerEffects.Blinded>(4);
             player.ReferenceHub.playerEffectsController.EnableEffect<CustomPlayerEffects.Deafened>(4);
-            if (Round.ElapsedTime.TotalSeconds > 25)
-            {
-                this.cooldown.Add(player.Id);
-                for (int i = 0; i < 15; i++)
-                {
-                    if (!player.IsConnected)
-                        break;
-                    player.SetGUI("scp106", PseudoGUIPosition.TOP, $"Cooldown: <color=yellow>{15 - i}</color>s");
-                    yield return Timing.WaitForSeconds(1);
-                }
 
-                this.cooldown.Remove(player.Id);
-                player.SetGUI("scp106", PseudoGUIPosition.TOP, null);
+            this.cooldown.Add(player.Id);
+            for (int i = 0; i < 15; i++)
+            {
+                if (!player.IsConnected)
+                    break;
+                player.SetGUI("scp106", PseudoGUIPosition.TOP, $"Cooldown: <color=yellow>{15 - i}</color>s");
+                yield return Timing.WaitForSeconds(1);
             }
+
+            this.cooldown.Remove(player.Id);
+            player.SetGUI("scp106", PseudoGUIPosition.TOP, null);
         }
 
         private Vector3 GetRandomRoom(Player player, bool sameZone)
@@ -340,7 +339,13 @@ namespace Mistaken.BetterSCP.SCP106
             bool first = true;
             if (!this.lastRooms.ContainsKey(player.Id))
                 this.lastRooms.Add(player.Id, new List<Vector3>());
-            while (!this.IsRoomOK(targetRoom, sameZone, zone, ref first) || (this.lastRooms[player.Id].Contains(targetRoom.Position) && targetRoom.Position.y < 800))
+
+            bool specialAbility = UnityEngine.Random.Range(1, 6) == 1 &&
+                        Round.ElapsedTime.TotalMinutes > 20 &&
+                        RealPlayers.List.Where(p => p.IsHuman).Count() < 5;
+            player.SendConsoleMessage("[106] Finder: Activated", "blue");
+
+            while (!this.IsRoomOK(targetRoom, sameZone, zone, ref first, specialAbility) || (this.lastRooms[player.Id].Contains(targetRoom.Position) && targetRoom.Position.y < 800))
             {
                 targetRoom = this.RandomRoom;
                 trie++;
@@ -366,28 +371,20 @@ namespace Mistaken.BetterSCP.SCP106
 
             if (Physics.Raycast(new Ray(targetPos + Vector3.up, -Vector3.up), out RaycastHit raycastHit, 10f, Server.Host.ReferenceHub.scp106PlayerScript.teleportPlacementMask))
                 targetPos = raycastHit.point - Vector3.up;
+            else
+                this.Log.Error($"Safe portal position not found | {targetPos}");
+
+            this.Log.Debug($"New raw position is {targetPos}", PluginHandler.Instance.Config.VerbouseOutput);
 
             return targetPos;
         }
 
-        private bool IsRoomOK(Room room, bool sameZone, ZoneType targetZone, ref bool first)
+        private bool IsRoomOK(Room room, bool sameZone, ZoneType targetZone, ref bool first, bool goToHuman)
         {
             if (room?.gameObject == null)
                 return false;
-#pragma warning disable SA1009 // Closing parenthesis should be spaced correctly
-            if (first &&
-                UnityEngine.Random.Range(1, 6) == 2 &&
-                (
-                    (
-                        Round.ElapsedTime.TotalMinutes > 20 &&
-                        RealPlayers.List.Where(p => p.IsAlive && p.Team != Team.SCP).Count() < 5
-                    )
-                    &&
-                    room.Players.Count() == 0
-                )
-            )
+            if (first && goToHuman && room.Players.Count() == 0)
                 return false;
-#pragma warning restore SA1009 // Closing parenthesis should be spaced correctly
             first = false;
             if (DisallowedRoomTypes.Contains(room.Type))
                 return false;
