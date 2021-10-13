@@ -356,10 +356,18 @@ namespace Mistaken.BetterSCP.SCP106
             this.lastRooms[player.Id].Add(targetRoom.Position);
             if (this.lastRooms[player.Id].Count > 3)
                 this.lastRooms[player.Id].RemoveAt(0);
+
+            Vector3 targetPos;
+
             if (targetRoom.Position.y > 800)
-                return Random.Range(0, 2) == 1 ? (targetRoom.Position + Vector3.down) : new Vector3(86, 992, -49);
+                targetPos = Random.Range(0, 2) == 1 ? targetRoom.Position : new Vector3(86, 992, -49);
             else
-                return targetRoom.Position + (Vector3.down * 0.2f) + Vector3.down;
+                targetPos = targetRoom.Position + (Vector3.down * 0.2f);
+
+            if (Physics.Raycast(new Ray(targetPos + Vector3.up, -Vector3.up), out RaycastHit raycastHit, 10f, Server.Host.ReferenceHub.scp106PlayerScript.teleportPlacementMask))
+                targetPos = raycastHit.point - Vector3.up;
+
+            return targetPos;
         }
 
         private bool IsRoomOK(Room room, bool sameZone, ZoneType targetZone, ref bool first)
