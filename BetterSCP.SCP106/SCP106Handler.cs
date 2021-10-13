@@ -344,7 +344,8 @@ namespace Mistaken.BetterSCP.SCP106
             bool specialAbility = UnityEngine.Random.Range(1, 6) == 1 &&
                         Round.ElapsedTime.TotalMinutes > 20 &&
                         RealPlayers.List.Where(p => p.IsHuman).Count() < 5;
-            player.SendConsoleMessage("[106] Finder: Activated", "blue");
+            if (specialAbility)
+                player.SendConsoleMessage("[106] Finder: Activated", "blue");
 
             while (!this.IsRoomOK(targetRoom, sameZone, zone, ref first, specialAbility) || (this.lastRooms[player.Id].Contains(targetRoom.Position) && targetRoom.Position.y < 800))
             {
