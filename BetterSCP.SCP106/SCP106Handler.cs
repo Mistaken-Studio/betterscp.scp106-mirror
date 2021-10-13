@@ -39,8 +39,20 @@ namespace Mistaken.BetterSCP.SCP106
             Exiled.Events.Handlers.Player.EscapingPocketDimension += this.Handle<Exiled.Events.EventArgs.EscapingPocketDimensionEventArgs>((ev) => this.Player_EscapingPocketDimension(ev));
             Exiled.Events.Handlers.Player.EnteringFemurBreaker += this.Handle<Exiled.Events.EventArgs.EnteringFemurBreakerEventArgs>((ev) => this.Player_EnteringFemurBreaker(ev));
             Exiled.Events.Handlers.Server.WaitingForPlayers += this.Handle(() => this.Server_WaitingForPlayers(), "WaitingForPlayers");
+            Exiled.Events.Handlers.Player.ChangingRole += Player_ChangingRole;
 
             SCPGUIHandler.SCPMessages.Add(RoleType.Scp106, PluginHandler.Instance.Translation.StartMessage);
+        }
+
+        private void Player_ChangingRole(Exiled.Events.EventArgs.ChangingRoleEventArgs ev)
+        {
+            if (ev.NewRole == RoleType.Scp106)
+            {
+                this.CallDelayed(1f, () =>
+                {
+                    ev.Player.ReferenceHub.scp106PlayerScript.UserCode_CmdMakePortal();
+                });
+            }
         }
 
         public override void OnDisable()
