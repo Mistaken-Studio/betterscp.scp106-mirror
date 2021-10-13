@@ -50,7 +50,7 @@ namespace Mistaken.BetterSCP.SCP106
             {
                 this.CallDelayed(1f, () =>
                 {
-                    ev.Player.ReferenceHub.scp106PlayerScript.UserCode_CmdMakePortal();
+                    ev.Player.ReferenceHub.scp106PlayerScript.NetworkportalPosition = ev.Player.Position;
                 });
             }
         }
