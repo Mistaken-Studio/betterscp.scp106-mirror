@@ -21,6 +21,8 @@ namespace Mistaken.BetterSCP.SCP106
     /// <inheritdoc/>
     internal class SCP106Handler : Module
     {
+        public const float CooldownOnStart = 35f;
+
         public SCP106Handler(PluginHandler p)
             : base(p)
         {
@@ -35,11 +37,11 @@ namespace Mistaken.BetterSCP.SCP106
             Exiled.Events.Handlers.Scp106.Containing += this.Handle<Exiled.Events.EventArgs.ContainingEventArgs>((ev) => this.Scp106_Containing(ev));
             Exiled.Events.Handlers.Server.RoundStarted += this.Handle(() => this.Server_RoundStarted(), "RoundStart");
             Exiled.Events.Handlers.Map.Decontaminating += this.Handle<Exiled.Events.EventArgs.DecontaminatingEventArgs>((ev) => this.Map_Decontaminating(ev));
-            Exiled.Events.Handlers.Player.Dying += this.Handle<Exiled.Events.EventArgs.DyingEventArgs>((ev) => this.Player_Dying(ev));
             Exiled.Events.Handlers.Player.FailingEscapePocketDimension += this.Handle<Exiled.Events.EventArgs.FailingEscapePocketDimensionEventArgs>((ev) => this.Player_FailingEscapePocketDimension(ev));
             Exiled.Events.Handlers.Player.EscapingPocketDimension += this.Handle<Exiled.Events.EventArgs.EscapingPocketDimensionEventArgs>((ev) => this.Player_EscapingPocketDimension(ev));
             Exiled.Events.Handlers.Player.EnteringFemurBreaker += this.Handle<Exiled.Events.EventArgs.EnteringFemurBreakerEventArgs>((ev) => this.Player_EnteringFemurBreaker(ev));
             Exiled.Events.Handlers.Server.WaitingForPlayers += this.Handle(() => this.Server_WaitingForPlayers(), "WaitingForPlayers");
+            Exiled.Events.Handlers.Player.ChangingRole += this.Handle<Exiled.Events.EventArgs.ChangingRoleEventArgs>((ev) => this.Player_ChangingRole(ev));
 
             SCPGUIHandler.SCPMessages.Add(RoleType.Scp106, PluginHandler.Instance.Translation.StartMessage);
         }
@@ -51,11 +53,11 @@ namespace Mistaken.BetterSCP.SCP106
             Exiled.Events.Handlers.Scp106.Containing -= this.Handle<Exiled.Events.EventArgs.ContainingEventArgs>((ev) => this.Scp106_Containing(ev));
             Exiled.Events.Handlers.Server.RoundStarted -= this.Handle(() => this.Server_RoundStarted(), "RoundStart");
             Exiled.Events.Handlers.Map.Decontaminating -= this.Handle<Exiled.Events.EventArgs.DecontaminatingEventArgs>((ev) => this.Map_Decontaminating(ev));
-            Exiled.Events.Handlers.Player.Dying -= this.Handle<Exiled.Events.EventArgs.DyingEventArgs>((ev) => this.Player_Dying(ev));
             Exiled.Events.Handlers.Player.FailingEscapePocketDimension -= this.Handle<Exiled.Events.EventArgs.FailingEscapePocketDimensionEventArgs>((ev) => this.Player_FailingEscapePocketDimension(ev));
             Exiled.Events.Handlers.Player.EscapingPocketDimension -= this.Handle<Exiled.Events.EventArgs.EscapingPocketDimensionEventArgs>((ev) => this.Player_EscapingPocketDimension(ev));
             Exiled.Events.Handlers.Player.EnteringFemurBreaker -= this.Handle<Exiled.Events.EventArgs.EnteringFemurBreakerEventArgs>((ev) => this.Player_EnteringFemurBreaker(ev));
             Exiled.Events.Handlers.Server.WaitingForPlayers -= this.Handle(() => this.Server_WaitingForPlayers(), "WaitingForPlayers");
+            Exiled.Events.Handlers.Player.ChangingRole -= this.Handle<Exiled.Events.EventArgs.ChangingRoleEventArgs>((ev) => this.Player_ChangingRole(ev));
 
             SCPGUIHandler.SCPMessages.Remove(RoleType.Scp106);
         }
@@ -64,6 +66,11 @@ namespace Mistaken.BetterSCP.SCP106
         {
             RoomType.EzShelter,
             RoomType.EzCollapsedTunnel,
+            RoomType.EzGateA,
+            RoomType.EzGateB,
+            RoomType.LczChkpA,
+            RoomType.LczChkpB,
+            RoomType.HczEzCheckpoint,
             RoomType.HczTesla,
             RoomType.Lcz173,
             RoomType.Hcz939,
@@ -84,6 +91,16 @@ namespace Mistaken.BetterSCP.SCP106
                 if (this.rooms == null || this.rooms.Length == 0)
                     this.rooms = Map.Rooms.Where(r => r != null && !DisallowedRoomTypes.Contains(r.Type)).ToArray();
                 return this.rooms[UnityEngine.Random.Range(0, this.rooms.Length)] ?? this.RandomRoom;
+            }
+        }
+
+        private void Player_ChangingRole(Exiled.Events.EventArgs.ChangingRoleEventArgs ev)
+        {
+            if (ev.NewRole == RoleType.Scp106)
+            {
+                this.CallDelayed(1f, () => ev.Player.ReferenceHub.scp106PlayerScript.NetworkportalPosition = ev.Player.Position);
+                if (Round.ElapsedTime.TotalSeconds < CooldownOnStart)
+                    this.RunCoroutine(this.StartCooldown(ev.Player), "LockStart");
             }
         }
 
@@ -122,56 +139,6 @@ namespace Mistaken.BetterSCP.SCP106
         {
             if (ev.Player.IsScp)
                 ev.IsAllowed = false;
-        }
-
-        private void Player_Dying(Exiled.Events.EventArgs.DyingEventArgs ev)
-        {
-            if (ev.Target.Role == RoleType.Scp106 && !ev.Target.IsGodModeEnabled && ev.HitInformation.Tool != DamageTypes.Recontainment && ev.HitInformation.Tool != DamageTypes.RagdollLess)
-            {
-                ev.Target?.SendConsoleMessage($"You have been killed by {ev.Killer?.ToString(false)} using {ev.HitInformation.Tool.Name}", "green");
-                MapPlus.Broadcast("BetterSCP.SCP106", 10, $"{ev.Target?.ToString(false)} killed by {ev.Killer?.ToString(false)} using {ev.HitInformation.Tool.Name}", Broadcast.BroadcastFlags.AdminChat);
-                this.inTeleportExecution.Add(ev.Target.Id);
-                if (ev.Target.IsConnected)
-                {
-                    ev.Target.Health = 2;
-                    try
-                    {
-                        ev.Target.Hurt(1, ev.Killer, ev.HitInformation.Tool);
-                    }
-                    catch (System.Exception ex)
-                    {
-                        this.Log.Error(ex.Message);
-                        this.Log.Error(ex.StackTrace);
-                    }
-
-                    ev.Target.Health = 0;
-                }
-
-                ev.Target.IsGodModeEnabled = true;
-                ev.IsAllowed = false;
-                this.CallDelayed(
-                    3,
-                    () =>
-                    {
-                        ev.Target.IsGodModeEnabled = false;
-                        ev.Target.Role = RoleType.Spectator;
-                        ev.Target.ReferenceHub.characterClassManager.TargetDeathScreen(ev.Target.Connection, ev.HitInformation);
-                        this.CallDelayed(
-                            2,
-                            () =>
-                            {
-                                ev.Target.ReferenceHub.characterClassManager.TargetDeathScreen(ev.Target.Connection, ev.HitInformation);
-                            },
-                            "Player_Dying2");
-                        Cassie.Message("SCP 1 0 6 RECONTAINED SUCCESSFULLY");
-                        this.inTeleportExecution.Remove(ev.Target.Id);
-                    },
-                    "Player_Dying1");
-                Vector3 newTarget = new Vector3(0, -2000, 0);
-                Scp106PlayerScript s106 = ev.Target.ReferenceHub.scp106PlayerScript;
-                s106.NetworkportalPosition = newTarget;
-                s106.UserCode_CmdUsePortal();
-            }
         }
 
         private void Scp106_Containing(Exiled.Events.EventArgs.ContainingEventArgs ev)
@@ -214,61 +181,20 @@ namespace Mistaken.BetterSCP.SCP106
             this.rooms = Map.Rooms.Where(r => r != null && !DisallowedRoomTypes.Contains(r.Type)).ToArray();
             this.lastRooms.Clear();
             this.inTeleportExecution.Clear();
-            this.RunCoroutine(this.LockStart(), "LockStart");
-            this.RunCoroutine(this.MoveFromPocket(), "MoveFromPocket");
         }
 
-        private IEnumerator<float> LockStart()
+        private IEnumerator<float> StartCooldown(Player scp)
         {
             yield return Timing.WaitForSeconds(0.1f);
-            foreach (var player in RealPlayers.Get(RoleType.Scp106))
+            while (Round.ElapsedTime.TotalSeconds < CooldownOnStart)
             {
-                player.Position = new Vector3(0, -1998, 0);
-                this.cooldown.Add(player.Id);
-                this.CallDelayed(25, () => this.cooldown.Remove(player.Id), "LockStart");
-            }
-
-            while (Round.ElapsedTime.TotalSeconds < 25)
-            {
-                foreach (var player in RealPlayers.Get(RoleType.Scp106))
-                    this.TeleportOldMan(player, new Vector3(UnityEngine.Random.Range(-2, 2), -2000, UnityEngine.Random.Range(-2, 2)), true);
-                SCPGUIHandler.SCPMessages[RoleType.Scp106] = $"{PluginHandler.Instance.Translation.StartMessage}<br>Zostaniesz wypuszczony za <color=yellow>{Mathf.RoundToInt(25 - (float)Round.ElapsedTime.TotalSeconds)}</color>s";
+                if (!scp.IsConnected)
+                    break;
+                scp.SetGUI("scp106", PseudoGUIPosition.TOP, $"Cooldown: <color=yellow>{CooldownOnStart - Mathf.RoundToInt((float)Round.ElapsedTime.TotalSeconds)}</color>s");
                 yield return Timing.WaitForSeconds(1);
             }
 
-            SCPGUIHandler.SCPMessages[RoleType.Scp106] = PluginHandler.Instance.Translation.StartMessage;
-            foreach (var player in RealPlayers.Get(Team.SCP))
-            {
-                while ((player.Position.y < -1900 || (player.Role != RoleType.Scp106 && Vector3.Distance(player.Position, RoleType.Scp106.GetRandomSpawnProperties().Item1) < 10)) && player.Team == Team.SCP)
-                {
-                    if (player.Role == RoleType.Scp106)
-                    {
-                        player.IsGodModeEnabled = true;
-                        this.TeleportOldMan(player, RoleType.Scp106.GetRandomSpawnProperties().Item1 + (Vector3.down * 2));
-                        yield return Timing.WaitForSeconds(10);
-                        player.IsGodModeEnabled = false;
-
-                        if (player.Position.y < -1900)
-                            player.Position = RoleType.Scp106.GetRandomSpawnProperties().Item1;
-                    }
-                    else
-                        player.Position = player.Role.GetRandomSpawnProperties().Item1;
-                    yield return Timing.WaitForSeconds(1);
-                }
-            }
-        }
-
-        private IEnumerator<float> MoveFromPocket()
-        {
-            yield return Timing.WaitForSeconds(5);
-            int rid = RoundPlus.RoundId;
-            yield return Timing.WaitForSeconds(55);
-            while (RealPlayers.Any(RoleType.Scp106) && rid == RoundPlus.RoundId)
-            {
-                foreach (var player in RealPlayers.Get(RoleType.Scp106).Where(p => p.IsInPocketDimension))
-                    player.Position = RoleType.Scp106.GetRandomSpawnProperties().Item1;
-                yield return Timing.WaitForSeconds(20);
-            }
+            scp.SetGUI("scp106", PseudoGUIPosition.TOP, null);
         }
 
         private void TeleportOldMan(Player player, Vector3 target, bool force = false)
@@ -325,7 +251,7 @@ namespace Mistaken.BetterSCP.SCP106
         private void Scp106_CreatingPortal(Exiled.Events.EventArgs.CreatingPortalEventArgs ev)
         {
             ev.IsAllowed = false;
-            if (Round.ElapsedTime.TotalSeconds < 25)
+            if (Round.ElapsedTime.TotalSeconds < CooldownOnStart)
             {
                 ev.Player.SendConsoleMessage("[106] Too early | Code: 2.1", "red");
                 return;
@@ -345,8 +271,7 @@ namespace Mistaken.BetterSCP.SCP106
             if (ev.Player.GetEffectActive<CustomPlayerEffects.Ensnared>())
             {
                 ev.IsAllowed = false;
-                if (Round.ElapsedTime.TotalSeconds > 25)
-                    ev.Player.SendConsoleMessage("[106] Ensnared active | Code: 3.2", "red");
+                ev.Player.SendConsoleMessage("[106] Ensnared active | Code: 3.2", "red");
                 return;
             }
 
@@ -356,9 +281,10 @@ namespace Mistaken.BetterSCP.SCP106
                 return;
             }
 
-            if (Round.ElapsedTime.TotalSeconds < 25)
+            if (Round.ElapsedTime.TotalSeconds < CooldownOnStart)
             {
                 ev.Player.SendConsoleMessage("[106] Too early | Code: 3.1", "red");
+                ev.IsAllowed = false;
                 return;
             }
 
@@ -396,20 +322,18 @@ namespace Mistaken.BetterSCP.SCP106
             player.ReferenceHub.playerEffectsController.EnableEffect<CustomPlayerEffects.Ensnared>(7.7f);
             player.ReferenceHub.playerEffectsController.EnableEffect<CustomPlayerEffects.Blinded>(4);
             player.ReferenceHub.playerEffectsController.EnableEffect<CustomPlayerEffects.Deafened>(4);
-            if (Round.ElapsedTime.TotalSeconds > 25)
-            {
-                this.cooldown.Add(player.Id);
-                for (int i = 0; i < 15; i++)
-                {
-                    if (!player.IsConnected)
-                        break;
-                    player.SetGUI("scp106", PseudoGUIPosition.TOP, $"Cooldown: <color=yellow>{15 - i}</color>s");
-                    yield return Timing.WaitForSeconds(1);
-                }
 
-                this.cooldown.Remove(player.Id);
-                player.SetGUI("scp106", PseudoGUIPosition.TOP, null);
+            this.cooldown.Add(player.Id);
+            for (int i = 0; i < 15; i++)
+            {
+                if (!player.IsConnected)
+                    break;
+                player.SetGUI("scp106", PseudoGUIPosition.TOP, $"Cooldown: <color=yellow>{15 - i}</color>s");
+                yield return Timing.WaitForSeconds(1);
             }
+
+            this.cooldown.Remove(player.Id);
+            player.SetGUI("scp106", PseudoGUIPosition.TOP, null);
         }
 
         private Vector3 GetRandomRoom(Player player, bool sameZone)
@@ -422,7 +346,14 @@ namespace Mistaken.BetterSCP.SCP106
             bool first = true;
             if (!this.lastRooms.ContainsKey(player.Id))
                 this.lastRooms.Add(player.Id, new List<Vector3>());
-            while (!this.IsRoomOK(targetRoom, sameZone, zone, ref first) || (this.lastRooms[player.Id].Contains(targetRoom.Position) && targetRoom.Position.y < 800))
+
+            bool specialAbility = UnityEngine.Random.Range(1, 6) == 1 &&
+                        Round.ElapsedTime.TotalMinutes > 20 &&
+                        RealPlayers.List.Where(p => p.IsHuman).Count() < 5;
+            if (specialAbility)
+                player.SendConsoleMessage("[106] Finder: Activated", "blue");
+
+            while (!this.IsRoomOK(targetRoom, sameZone, zone, ref first, specialAbility) || (this.lastRooms[player.Id].Contains(targetRoom.Position) && targetRoom.Position.y < 800))
             {
                 targetRoom = this.RandomRoom;
                 trie++;
@@ -430,7 +361,7 @@ namespace Mistaken.BetterSCP.SCP106
                 {
                     this.Log.Warn("Failed to generate teleport position in 1000 tries");
                     player.SendConsoleMessage("[106] Failed to generate | Code: 4.1", "red");
-                    return new Vector3(0, 1002, 0);
+                    return new Vector3(0, 1000, 0);
                 }
             }
 
@@ -438,30 +369,30 @@ namespace Mistaken.BetterSCP.SCP106
             this.lastRooms[player.Id].Add(targetRoom.Position);
             if (this.lastRooms[player.Id].Count > 3)
                 this.lastRooms[player.Id].RemoveAt(0);
+
+            Vector3 targetPos;
+
             if (targetRoom.Position.y > 800)
-                return Random.Range(0, 2) == 1 ? targetRoom.Position : new Vector3(86, 992, -49);
+                targetPos = Random.Range(0, 2) == 1 ? targetRoom.Position : new Vector3(86, 992, -49);
             else
-                return targetRoom.Position + (Vector3.down * 0.2f);
+                targetPos = targetRoom.Position + (Vector3.down * 0.2f);
+
+            if (Physics.Raycast(new Ray(targetPos + Vector3.up, -Vector3.up), out RaycastHit raycastHit, 10f, Server.Host.ReferenceHub.scp106PlayerScript.teleportPlacementMask))
+                targetPos = raycastHit.point - Vector3.up;
+            else
+                this.Log.Error($"Safe portal position not found | {targetPos}");
+
+            this.Log.Debug($"New raw position is {targetPos}", PluginHandler.Instance.Config.VerbouseOutput);
+
+            return targetPos;
         }
 
-        private bool IsRoomOK(Room room, bool sameZone, ZoneType targetZone, ref bool first)
+        private bool IsRoomOK(Room room, bool sameZone, ZoneType targetZone, ref bool first, bool goToHuman)
         {
             if (room?.gameObject == null)
                 return false;
-#pragma warning disable SA1009 // Closing parenthesis should be spaced correctly
-            if (first &&
-                UnityEngine.Random.Range(1, 6) == 2 &&
-                (
-                    (
-                        Round.ElapsedTime.TotalMinutes > 20 &&
-                        RealPlayers.List.Where(p => p.IsAlive && p.Team != Team.SCP).Count() < 5
-                    )
-                    &&
-                    room.Players.Count() == 0
-                )
-            )
+            if (first && goToHuman && room.Players.Count() == 0)
                 return false;
-#pragma warning restore SA1009 // Closing parenthesis should be spaced correctly
             first = false;
             if (DisallowedRoomTypes.Contains(room.Type))
                 return false;
