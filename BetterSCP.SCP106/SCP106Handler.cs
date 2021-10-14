@@ -66,6 +66,11 @@ namespace Mistaken.BetterSCP.SCP106
         {
             RoomType.EzShelter,
             RoomType.EzCollapsedTunnel,
+            RoomType.EzGateA,
+            RoomType.EzGateB,
+            RoomType.LczChkpA,
+            RoomType.LczChkpB,
+            RoomType.HczEzCheckpoint,
             RoomType.HczTesla,
             RoomType.Lcz173,
             RoomType.Hcz939,
