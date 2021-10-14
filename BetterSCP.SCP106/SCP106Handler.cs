@@ -279,6 +279,7 @@ namespace Mistaken.BetterSCP.SCP106
             if (Round.ElapsedTime.TotalSeconds < CooldownOnStart)
             {
                 ev.Player.SendConsoleMessage("[106] Too early | Code: 3.1", "red");
+                ev.IsAllowed = false;
                 return;
             }
 
