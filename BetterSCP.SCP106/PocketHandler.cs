@@ -56,16 +56,12 @@ namespace Mistaken.BetterSCP.SCP106
             ThrowItems(player);
             try
             {
-                ragdollManager.SpawnRagdoll(
+                Exiled.API.Features.Ragdoll.Spawn(
+                    player,
+                    DamageTypes.Pocket,
                     Map.Rooms[UnityEngine.Random.Range(0, Map.Rooms.Count)].Position + new Vector3(0, 3, 0),
-                    Quaternion.identity,
-                    Vector3.down * 20,
-                    (int)player.Role,
-                    new PlayerStats.HitInfo(99999, "WORLD", DamageTypes.Pocket, -1, false),
-                    false,
-                    player.UserId,
-                    player.Nickname,
-                    player.Id);
+                    velocity: Vector3.down * 5,
+                    allowRecall: false);
             }
             catch (System.Exception ex)
             {
@@ -86,7 +82,7 @@ namespace Mistaken.BetterSCP.SCP106
             RoomType.Pocket,
         };
 
-        private static RagdollManager ragdollManager;
+        private static RagdollManager ragdollManager { get; set; }
 
         private static new ModuleLogger Log { get; set; }
 
