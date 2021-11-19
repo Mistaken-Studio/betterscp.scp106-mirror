@@ -32,32 +32,32 @@ namespace Mistaken.BetterSCP.SCP106
 
         public override void OnEnable()
         {
-            Exiled.Events.Handlers.Scp106.Teleporting += this.Handle<Exiled.Events.EventArgs.TeleportingEventArgs>((ev) => this.Scp106_Teleporting(ev));
-            Exiled.Events.Handlers.Scp106.CreatingPortal += this.Handle<Exiled.Events.EventArgs.CreatingPortalEventArgs>((ev) => this.Scp106_CreatingPortal(ev));
-            Exiled.Events.Handlers.Scp106.Containing += this.Handle<Exiled.Events.EventArgs.ContainingEventArgs>((ev) => this.Scp106_Containing(ev));
-            Exiled.Events.Handlers.Server.RoundStarted += this.Handle(() => this.Server_RoundStarted(), "RoundStart");
-            Exiled.Events.Handlers.Map.Decontaminating += this.Handle<Exiled.Events.EventArgs.DecontaminatingEventArgs>((ev) => this.Map_Decontaminating(ev));
-            Exiled.Events.Handlers.Player.FailingEscapePocketDimension += this.Handle<Exiled.Events.EventArgs.FailingEscapePocketDimensionEventArgs>((ev) => this.Player_FailingEscapePocketDimension(ev));
-            Exiled.Events.Handlers.Player.EscapingPocketDimension += this.Handle<Exiled.Events.EventArgs.EscapingPocketDimensionEventArgs>((ev) => this.Player_EscapingPocketDimension(ev));
-            Exiled.Events.Handlers.Player.EnteringFemurBreaker += this.Handle<Exiled.Events.EventArgs.EnteringFemurBreakerEventArgs>((ev) => this.Player_EnteringFemurBreaker(ev));
-            Exiled.Events.Handlers.Server.WaitingForPlayers += this.Handle(() => this.Server_WaitingForPlayers(), "WaitingForPlayers");
-            Exiled.Events.Handlers.Player.ChangingRole += this.Handle<Exiled.Events.EventArgs.ChangingRoleEventArgs>((ev) => this.Player_ChangingRole(ev));
+            Exiled.Events.Handlers.Scp106.Teleporting += this.Scp106_Teleporting;
+            Exiled.Events.Handlers.Scp106.CreatingPortal += this.Scp106_CreatingPortal;
+            Exiled.Events.Handlers.Scp106.Containing += this.Scp106_Containing;
+            Exiled.Events.Handlers.Server.RoundStarted += this.Server_RoundStarted;
+            Exiled.Events.Handlers.Map.Decontaminating += this.Map_Decontaminating;
+            Exiled.Events.Handlers.Player.FailingEscapePocketDimension += this.Player_FailingEscapePocketDimension;
+            Exiled.Events.Handlers.Player.EscapingPocketDimension += this.Player_EscapingPocketDimension;
+            Exiled.Events.Handlers.Player.EnteringFemurBreaker += this.Player_EnteringFemurBreaker;
+            Exiled.Events.Handlers.Server.WaitingForPlayers += this.Server_WaitingForPlayers;
+            Exiled.Events.Handlers.Player.ChangingRole += this.Player_ChangingRole;
 
             SCPGUIHandler.SCPMessages.Add(RoleType.Scp106, PluginHandler.Instance.Translation.StartMessage);
         }
 
         public override void OnDisable()
         {
-            Exiled.Events.Handlers.Scp106.Teleporting -= this.Handle<Exiled.Events.EventArgs.TeleportingEventArgs>((ev) => this.Scp106_Teleporting(ev));
-            Exiled.Events.Handlers.Scp106.CreatingPortal -= this.Handle<Exiled.Events.EventArgs.CreatingPortalEventArgs>((ev) => this.Scp106_CreatingPortal(ev));
-            Exiled.Events.Handlers.Scp106.Containing -= this.Handle<Exiled.Events.EventArgs.ContainingEventArgs>((ev) => this.Scp106_Containing(ev));
-            Exiled.Events.Handlers.Server.RoundStarted -= this.Handle(() => this.Server_RoundStarted(), "RoundStart");
-            Exiled.Events.Handlers.Map.Decontaminating -= this.Handle<Exiled.Events.EventArgs.DecontaminatingEventArgs>((ev) => this.Map_Decontaminating(ev));
-            Exiled.Events.Handlers.Player.FailingEscapePocketDimension -= this.Handle<Exiled.Events.EventArgs.FailingEscapePocketDimensionEventArgs>((ev) => this.Player_FailingEscapePocketDimension(ev));
-            Exiled.Events.Handlers.Player.EscapingPocketDimension -= this.Handle<Exiled.Events.EventArgs.EscapingPocketDimensionEventArgs>((ev) => this.Player_EscapingPocketDimension(ev));
-            Exiled.Events.Handlers.Player.EnteringFemurBreaker -= this.Handle<Exiled.Events.EventArgs.EnteringFemurBreakerEventArgs>((ev) => this.Player_EnteringFemurBreaker(ev));
-            Exiled.Events.Handlers.Server.WaitingForPlayers -= this.Handle(() => this.Server_WaitingForPlayers(), "WaitingForPlayers");
-            Exiled.Events.Handlers.Player.ChangingRole -= this.Handle<Exiled.Events.EventArgs.ChangingRoleEventArgs>((ev) => this.Player_ChangingRole(ev));
+            Exiled.Events.Handlers.Scp106.Teleporting -= this.Scp106_Teleporting;
+            Exiled.Events.Handlers.Scp106.CreatingPortal -= this.Scp106_CreatingPortal;
+            Exiled.Events.Handlers.Scp106.Containing -= this.Scp106_Containing;
+            Exiled.Events.Handlers.Server.RoundStarted -= this.Server_RoundStarted;
+            Exiled.Events.Handlers.Map.Decontaminating -= this.Map_Decontaminating;
+            Exiled.Events.Handlers.Player.FailingEscapePocketDimension -= this.Player_FailingEscapePocketDimension;
+            Exiled.Events.Handlers.Player.EscapingPocketDimension -= this.Player_EscapingPocketDimension;
+            Exiled.Events.Handlers.Player.EnteringFemurBreaker -= this.Player_EnteringFemurBreaker;
+            Exiled.Events.Handlers.Server.WaitingForPlayers -= this.Server_WaitingForPlayers;
+            Exiled.Events.Handlers.Player.ChangingRole -= this.Player_ChangingRole;
 
             SCPGUIHandler.SCPMessages.Remove(RoleType.Scp106);
         }

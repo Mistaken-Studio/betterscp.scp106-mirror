@@ -29,26 +29,26 @@ namespace Mistaken.BetterSCP.SCP106
 
         public override void OnEnable()
         {
-            Exiled.Events.Handlers.Player.Dying += this.Handle<Exiled.Events.EventArgs.DyingEventArgs>((ev) => this.Player_Dying(ev));
-            Exiled.Events.Handlers.Player.Hurting += this.Handle<Exiled.Events.EventArgs.HurtingEventArgs>((ev) => this.Player_Hurting(ev));
-            Exiled.Events.Handlers.Player.DroppingItem += this.Handle<Exiled.Events.EventArgs.DroppingItemEventArgs>((ev) => this.Player_DroppingItem(ev));
-            Exiled.Events.Handlers.Server.WaitingForPlayers += this.Handle(() => this.Server_WaitingForPlayers(), "WaitingForPlayers");
-            Exiled.Events.Handlers.Player.EscapingPocketDimension += this.Handle<Exiled.Events.EventArgs.EscapingPocketDimensionEventArgs>((ev) => this.Player_EscapingPocketDimension(ev));
-            Exiled.Events.Handlers.Server.RoundStarted += this.Handle(() => this.Server_RoundStarted(), "RoundStart");
-            Exiled.Events.Handlers.Player.FailingEscapePocketDimension += this.Handle<Exiled.Events.EventArgs.FailingEscapePocketDimensionEventArgs>((ev) => this.Player_FailingEscapePocketDimension(ev));
-            Exiled.Events.Handlers.Player.Shooting += this.Handle<Exiled.Events.EventArgs.ShootingEventArgs>((ev) => this.Player_Shooting(ev));
+            Exiled.Events.Handlers.Player.Dying += this.Player_Dying;
+            Exiled.Events.Handlers.Player.Hurting += this.Player_Hurting;
+            Exiled.Events.Handlers.Player.DroppingItem += this.Player_DroppingItem;
+            Exiled.Events.Handlers.Server.WaitingForPlayers += this.Server_WaitingForPlayers;
+            Exiled.Events.Handlers.Player.EscapingPocketDimension += this.Player_EscapingPocketDimension;
+            Exiled.Events.Handlers.Server.RoundStarted += this.Server_RoundStarted;
+            Exiled.Events.Handlers.Player.FailingEscapePocketDimension += this.Player_FailingEscapePocketDimension;
+            Exiled.Events.Handlers.Player.Shooting += this.Player_Shooting;
         }
 
         public override void OnDisable()
         {
-            Exiled.Events.Handlers.Player.Dying -= this.Handle<Exiled.Events.EventArgs.DyingEventArgs>((ev) => this.Player_Dying(ev));
-            Exiled.Events.Handlers.Player.Hurting -= this.Handle<Exiled.Events.EventArgs.HurtingEventArgs>((ev) => this.Player_Hurting(ev));
-            Exiled.Events.Handlers.Player.DroppingItem -= this.Handle<Exiled.Events.EventArgs.DroppingItemEventArgs>((ev) => this.Player_DroppingItem(ev));
-            Exiled.Events.Handlers.Server.WaitingForPlayers -= this.Handle(() => this.Server_WaitingForPlayers(), "WaitingForPlayers");
-            Exiled.Events.Handlers.Player.EscapingPocketDimension -= this.Handle<Exiled.Events.EventArgs.EscapingPocketDimensionEventArgs>((ev) => this.Player_EscapingPocketDimension(ev));
-            Exiled.Events.Handlers.Server.RoundStarted -= this.Handle(() => this.Server_RoundStarted(), "RoundStart");
-            Exiled.Events.Handlers.Player.FailingEscapePocketDimension -= this.Handle<Exiled.Events.EventArgs.FailingEscapePocketDimensionEventArgs>((ev) => this.Player_FailingEscapePocketDimension(ev));
-            Exiled.Events.Handlers.Player.Shooting -= this.Handle<Exiled.Events.EventArgs.ShootingEventArgs>((ev) => this.Player_Shooting(ev));
+            Exiled.Events.Handlers.Player.Dying -= this.Player_Dying;
+            Exiled.Events.Handlers.Player.Hurting -= this.Player_Hurting;
+            Exiled.Events.Handlers.Player.DroppingItem -= this.Player_DroppingItem;
+            Exiled.Events.Handlers.Server.WaitingForPlayers -= this.Server_WaitingForPlayers;
+            Exiled.Events.Handlers.Player.EscapingPocketDimension -= this.Player_EscapingPocketDimension;
+            Exiled.Events.Handlers.Server.RoundStarted -= this.Server_RoundStarted;
+            Exiled.Events.Handlers.Player.FailingEscapePocketDimension -= this.Player_FailingEscapePocketDimension;
+            Exiled.Events.Handlers.Player.Shooting -= this.Player_Shooting;
         }
 
         internal static void OnKilledINPocket(Player player)
@@ -57,11 +57,12 @@ namespace Mistaken.BetterSCP.SCP106
             try
             {
                 Exiled.API.Features.Ragdoll.Spawn(
-                    player,
-                    DamageTypes.Pocket,
-                    Map.Rooms[UnityEngine.Random.Range(0, Map.Rooms.Count)].Position + new Vector3(0, 3, 0),
+                    victim: player,
+                    deathCause: DamageTypes.Pocket,
+                    position: Map.Rooms[UnityEngine.Random.Range(0, Map.Rooms.Count)].Position + new Vector3(0, 3, 0),
                     velocity: Vector3.down * 5,
-                    allowRecall: false);
+                    allowRecall: false,
+                    scp096Death: false);
             }
             catch (System.Exception ex)
             {
@@ -82,7 +83,7 @@ namespace Mistaken.BetterSCP.SCP106
             RoomType.Pocket,
         };
 
-        private static RagdollManager ragdollManager { get; set; }
+        private static RagdollManager RagdollManager { get; set; }
 
         private static new ModuleLogger Log { get; set; }
 
@@ -261,7 +262,7 @@ namespace Mistaken.BetterSCP.SCP106
         private void Server_WaitingForPlayers()
         {
             InPocket.Clear();
-            ragdollManager = GameObject.FindObjectOfType<RagdollManager>();
+            RagdollManager = GameObject.FindObjectOfType<RagdollManager>();
         }
 
         private void Player_Dying(Exiled.Events.EventArgs.DyingEventArgs ev)
