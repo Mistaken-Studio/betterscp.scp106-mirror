@@ -13,6 +13,7 @@ using Mirror;
 using Mistaken.API;
 using Mistaken.API.Diagnostics;
 using Mistaken.API.Extensions;
+using PlayerStatsSystem;
 using UnityEngine;
 
 namespace Mistaken.BetterSCP.SCP106
@@ -56,13 +57,7 @@ namespace Mistaken.BetterSCP.SCP106
             ThrowItems(player);
             try
             {
-                Exiled.API.Features.Ragdoll.Spawn(
-                    victim: player,
-                    deathCause: DamageTypes.Pocket,
-                    position: Map.Rooms[UnityEngine.Random.Range(0, Map.Rooms.Count)].Position + new Vector3(0, 3, 0),
-                    velocity: Vector3.down * 5,
-                    allowRecall: false,
-                    scp096Death: false);
+                Exiled.API.Features.Ragdoll.Spawn(player, new UniversalDamageHandler(-1f, DeathTranslations.PocketDecay));
             }
             catch (System.Exception ex)
             {
@@ -70,7 +65,7 @@ namespace Mistaken.BetterSCP.SCP106
                 Log.Error(ex.StackTrace);
             }
 
-            player.Kill(DamageTypes.RagdollLess);
+            player.Kill(PluginHandler.Instance.Translation.UnluckyMessage);
         }
 
         private static readonly RoomType[] DisallowedRoomTypes = new RoomType[]
@@ -82,8 +77,6 @@ namespace Mistaken.BetterSCP.SCP106
             RoomType.Hcz939,
             RoomType.Pocket,
         };
-
-        private static RagdollManager RagdollManager { get; set; }
 
         private static new ModuleLogger Log { get; set; }
 
@@ -243,7 +236,7 @@ namespace Mistaken.BetterSCP.SCP106
 
         private void Player_Hurting(Exiled.Events.EventArgs.HurtingEventArgs ev)
         {
-            if (ev.Target.Position.y < -1900 && ev.DamageType != DamageTypes.RagdollLess)
+            if (ev.Target.Position.y < -1900 && ev.Handler.Type != DamageType.Unknown)
             {
                 if (!ev.Target.IsReadyPlayer())
                 {
@@ -262,7 +255,6 @@ namespace Mistaken.BetterSCP.SCP106
         private void Server_WaitingForPlayers()
         {
             InPocket.Clear();
-            RagdollManager = GameObject.FindObjectOfType<RagdollManager>();
         }
 
         private void Player_Dying(Exiled.Events.EventArgs.DyingEventArgs ev)
