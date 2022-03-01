@@ -81,7 +81,6 @@
   -->
   <PropertyGroup>
     <PreBuildEvent>
-      nuget install
     </PreBuildEvent>
     <PostBuildEvent>
       copy $(TargetPath) $(MISTAKEN_REFERENCES)\$(TargetFileName)

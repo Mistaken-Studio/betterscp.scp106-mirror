@@ -147,8 +147,11 @@ namespace Mistaken.BetterSCP.SCP106
             {
                 if (door.Type == DoorType.Scp106Bottom || door.Type == DoorType.Scp106Primary || door.Type == DoorType.Scp106Secondary)
                 {
-                    door.ChangeLock(DoorLockType.Warhead);
-                    door.IsOpen = true;
+                    this.CallDelayed(20f, () =>
+                    {
+                        door.Base.ServerChangeLock(Interactables.Interobjects.DoorUtils.DoorLockReason.Warhead, true);
+                        door.IsOpen = true;
+                    });
                 }
             }
 
