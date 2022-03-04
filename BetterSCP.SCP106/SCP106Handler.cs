@@ -143,6 +143,18 @@ namespace Mistaken.BetterSCP.SCP106
 
         private void Scp106_Containing(Exiled.Events.EventArgs.ContainingEventArgs ev)
         {
+            foreach (Door door in Map.Doors)
+            {
+                if (door.Type == DoorType.Scp106Bottom || door.Type == DoorType.Scp106Primary || door.Type == DoorType.Scp106Secondary)
+                {
+                    this.CallDelayed(20f, () =>
+                    {
+                        door.Base.ServerChangeLock(Interactables.Interobjects.DoorUtils.DoorLockReason.Warhead, true);
+                        door.IsOpen = true;
+                    });
+                }
+            }
+
             Vector3 newTarget = Map.Doors.FirstOrDefault(d => d.Type == DoorType.Scp106Primary)?.Base.transform.position ?? default;
             if (newTarget == default)
             {
