@@ -89,7 +89,7 @@ namespace Mistaken.BetterSCP.SCP106
             get
             {
                 if (this.rooms == null || this.rooms.Length == 0)
-                    this.rooms = Map.Rooms.Where(r => r != null && !DisallowedRoomTypes.Contains(r.Type)).ToArray();
+                    this.rooms = Room.List.Where(r => r != null && !DisallowedRoomTypes.Contains(r.Type)).ToArray();
                 return this.rooms[UnityEngine.Random.Range(0, this.rooms.Length)] ?? this.RandomRoom;
             }
         }
@@ -114,7 +114,7 @@ namespace Mistaken.BetterSCP.SCP106
                         this.Server_WaitingForPlayers();
                 },
                 "Server_WaitingForPlayers");
-            this.rooms = Map.Rooms.Where(r => r != null && !DisallowedRoomTypes.Contains(r.Type)).ToArray();
+            this.rooms = Room.List.Where(r => r != null && !DisallowedRoomTypes.Contains(r.Type)).ToArray();
         }
 
         private void Player_EnteringFemurBreaker(Exiled.Events.EventArgs.EnteringFemurBreakerEventArgs ev)
@@ -143,7 +143,7 @@ namespace Mistaken.BetterSCP.SCP106
 
         private void Scp106_Containing(Exiled.Events.EventArgs.ContainingEventArgs ev)
         {
-            foreach (Door door in Map.Doors)
+            foreach (Door door in Door.List)
             {
                 if (door.Type == DoorType.Scp106Bottom || door.Type == DoorType.Scp106Primary || door.Type == DoorType.Scp106Secondary)
                 {
@@ -155,7 +155,7 @@ namespace Mistaken.BetterSCP.SCP106
                 }
             }
 
-            Vector3 newTarget = Map.Doors.FirstOrDefault(d => d.Type == DoorType.Scp106Primary)?.Base.transform.position ?? default;
+            Vector3 newTarget = Door.List.FirstOrDefault(d => d.Type == DoorType.Scp106Primary)?.Base.transform.position ?? default;
             if (newTarget == default)
             {
                 RealPlayers.Get(RoleType.Scp106).ToList().ForEach(p => p.SendConsoleMessage("[106] Not teleporting to cell, cell not found | Code: 5.1", "red"));
@@ -190,7 +190,7 @@ namespace Mistaken.BetterSCP.SCP106
         {
             this.cooldown.Clear();
             this.Log.Info("Setting Rooms");
-            this.rooms = Map.Rooms.Where(r => r != null && !DisallowedRoomTypes.Contains(r.Type)).ToArray();
+            this.rooms = Room.List.Where(r => r != null && !DisallowedRoomTypes.Contains(r.Type)).ToArray();
             this.lastRooms.Clear();
             this.inTeleportExecution.Clear();
         }

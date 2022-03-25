@@ -94,7 +94,7 @@ namespace Mistaken.BetterSCP.SCP106
             {
                 try
                 {
-                    item.Spawn(Map.Rooms[UnityEngine.Random.Range(0, Map.Rooms.Count)].Position + new Vector3(0, 2, 0));
+                    item.Spawn(Room.List.ToList()[UnityEngine.Random.Range(0, Room.List.Count())].Position + new Vector3(0, 2, 0));
                 }
                 catch (System.Exception e)
                 {
@@ -135,7 +135,7 @@ namespace Mistaken.BetterSCP.SCP106
 
         private void SetRooms()
         {
-            this.rooms = Map.Rooms.Where(r => !DisallowedRoomTypes.Contains(r.Type) && r != null).ToArray();
+            this.rooms = Room.List.Where(r => !DisallowedRoomTypes.Contains(r.Type) && r != null).ToArray();
         }
 
         private void Server_RoundStarted()
