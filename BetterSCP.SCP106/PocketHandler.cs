@@ -308,8 +308,11 @@ namespace Mistaken.BetterSCP.SCP106
             if (InPocket.Contains(ev.Target.Id))
                 InPocket.Remove(ev.Target.Id);
 
-            if (ev.Target.Position.y < -1900)
+            if (ev.Target.Position.y < -1900 && !(ev.Handler.Base is CustomReasonDamageHandler))
+            {
                 OnKilledINPocket(ev.Target);
+                ev.IsAllowed = false;
+            }
         }
     }
 }
