@@ -93,7 +93,10 @@ namespace Mistaken.BetterSCP.SCP106
             foreach (var item in items.ToArray())
             {
                 if (item.Type == ItemType.MicroHID || item.IsKeycard)
+                {
+                    item.Spawn(player.Position + (Vector3.up * 2));
                     continue;
+                }
 
                 try
                 {
