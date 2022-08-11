@@ -118,7 +118,8 @@ namespace Mistaken.BetterSCP.SCP106
 
         private void Player_InteractingDoor(Exiled.Events.EventArgs.InteractingDoorEventArgs ev)
         {
-            this.Log.Debug(ev.Player is null, true);
+            if (ev.Player.Role.Type == RoleType.Scp079)
+                return;
 
             var type = ev.Door.Type;
             if (type == DoorType.Scp106Primary || type == DoorType.Scp106Secondary || type == DoorType.Scp106Bottom)
