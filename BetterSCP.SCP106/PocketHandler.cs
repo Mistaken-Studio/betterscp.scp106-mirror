@@ -8,8 +8,11 @@ using System.Collections.Generic;
 using System.Linq;
 using Exiled.API.Enums;
 using Exiled.API.Features;
+using InventorySystem;
+using InventorySystem.Items;
+using InventorySystem.Items.Firearms.Ammo;
+using InventorySystem.Items.Pickups;
 using MEC;
-using Mirror;
 using Mistaken.API;
 using Mistaken.API.Diagnostics;
 using Mistaken.API.Extensions;
@@ -85,16 +88,16 @@ namespace Mistaken.BetterSCP.SCP106
         private static void ThrowItems(Player player)
         {
             var items = player.Items;
-            player.Ammo[ItemType.Ammo12gauge] = 0;
-            player.Ammo[ItemType.Ammo44cal] = 0;
-            player.Ammo[ItemType.Ammo556x45] = 0;
-            player.Ammo[ItemType.Ammo762x39] = 0;
-            player.Ammo[ItemType.Ammo9x19] = 0;
+            var rooms = Room.List.ToList();
+            DropAllAmmo(player.Inventory);
             foreach (var item in items.ToArray())
             {
+                if (item.Type == ItemType.MicroHID || item.IsKeycard)
+                    continue;
+
                 try
                 {
-                    item.Spawn(Room.List.ToList()[UnityEngine.Random.Range(0, Room.List.Count())].Position + new Vector3(0, 2, 0));
+                    item.Spawn(rooms[UnityEngine.Random.Range(0, rooms.Count)].Position + new Vector3(0, 2, 0));
                 }
                 catch (System.Exception e)
                 {
@@ -104,6 +107,46 @@ namespace Mistaken.BetterSCP.SCP106
             }
 
             player.ClearInventory();
+        }
+
+        private static void DropAllAmmo(Inventory inv)
+        {
+            var rooms = Room.List.ToList();
+            foreach (var kvp in inv.UserInventory.ReserveAmmo)
+            {
+                if (InventoryItemLoader.AvailableItems.TryGetValue(kvp.Key, out var value2))
+                {
+                    if (value2.PickupDropModel == null)
+                    {
+                        Debug.LogError("No pickup drop model set. Could not drop the ammo.");
+                        return;
+                    }
+
+                    int num2 = kvp.Value;
+                    inv.UserInventory.ReserveAmmo[kvp.Key] = 0;
+                    inv.SendAmmoNextFrame = true;
+                    while (num2 > 0)
+                    {
+                        PickupSyncInfo pickupSyncInfo = default(PickupSyncInfo);
+                        pickupSyncInfo.ItemId = kvp.Key;
+                        pickupSyncInfo.Serial = ItemSerialGenerator.GenerateNext();
+                        pickupSyncInfo.Weight = value2.Weight;
+                        pickupSyncInfo.Position = inv.transform.position;
+                        PickupSyncInfo psi = pickupSyncInfo;
+                        AmmoPickup ammoPickup2;
+                        if ((object)(ammoPickup2 = inv.ServerCreatePickup(value2, psi) as AmmoPickup) != null)
+                        {
+                            ammoPickup2.NetworkSavedAmmo = (ushort)Mathf.Min(ammoPickup2.MaxAmmo, num2);
+                            num2 -= ammoPickup2.SavedAmmo;
+                            ammoPickup2.transform.position = rooms[UnityEngine.Random.Range(0, rooms.Count)].Position + new Vector3(0, 2, 0);
+                        }
+                        else
+                        {
+                            num2--;
+                        }
+                    }
+                }
+            }
         }
 
         private Room[] rooms;
@@ -169,7 +212,7 @@ namespace Mistaken.BetterSCP.SCP106
                 return;
             }
 
-            if (this.rooms == null)
+            /*if (this.rooms == null)
                 return;
             int trie = 0;
             bool forceNext = false;
@@ -194,12 +237,12 @@ namespace Mistaken.BetterSCP.SCP106
             ev.Player.SendConsoleMessage($"[BETTER POCKET] Teleported to {position} | {targetRoom?.Type} | {targetRoom?.Zone}", "yellow");
             ev.TeleportPosition = position;
             ev.IsAllowed = false;
-            ev.Player.Position = ev.TeleportPosition;
+            ev.Player.Position = ev.TeleportPosition;*/
             var pec = ev.Player.ReferenceHub.playerEffectsController;
-            pec.EnableEffect<CustomPlayerEffects.Flashed>(2);
-            pec.EnableEffect<CustomPlayerEffects.Blinded>(5);
-            pec.EnableEffect<CustomPlayerEffects.Deafened>(10);
-            pec.EnableEffect<CustomPlayerEffects.Concussed>(10);
+            pec.EnableEffect<CustomPlayerEffects.Flashed>(1);
+            pec.EnableEffect<CustomPlayerEffects.Blinded>(2.5f);
+            pec.EnableEffect<CustomPlayerEffects.Deafened>(3);
+            pec.EnableEffect<CustomPlayerEffects.Concussed>(5);
             InPocket.Remove(ev.Player.Id);
             {
                 PocketDimensionTeleport[] array = PocketDimensionGenerator.PrepTeleports();
@@ -243,12 +286,6 @@ namespace Mistaken.BetterSCP.SCP106
                     ev.IsAllowed = false;
                     return;
                 }
-
-                if (ev.Target.Health <= ev.Amount)
-                {
-                    OnKilledINPocket(ev.Target);
-                    ev.IsAllowed = false;
-                }
             }
         }
 
@@ -263,7 +300,7 @@ namespace Mistaken.BetterSCP.SCP106
                 InPocket.Remove(ev.Target.Id);
 
             if (ev.Target.Position.y < -1900)
-                ThrowItems(ev.Target);
+                OnKilledINPocket(ev.Target);
         }
     }
 }
