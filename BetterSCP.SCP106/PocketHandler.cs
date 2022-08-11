@@ -89,7 +89,7 @@ namespace Mistaken.BetterSCP.SCP106
         {
             var items = player.Items;
             var rooms = Room.List.ToList();
-            DropAllAmmo(player.Inventory);
+            DropAllAmmo(player);
             foreach (var item in items.ToArray())
             {
                 if (item.Type == ItemType.MicroHID || item.IsKeycard)
@@ -112,10 +112,10 @@ namespace Mistaken.BetterSCP.SCP106
             player.ClearInventory();
         }
 
-        private static void DropAllAmmo(Inventory inv)
+        private static void DropAllAmmo(Player player)
         {
             var rooms = Room.List.ToList();
-            foreach (var kvp in inv.UserInventory.ReserveAmmo)
+            foreach (var kvp in player.Ammo)
             {
                 if (InventoryItemLoader.AvailableItems.TryGetValue(kvp.Key, out var value2))
                 {
@@ -126,22 +126,20 @@ namespace Mistaken.BetterSCP.SCP106
                     }
 
                     int num2 = kvp.Value;
-                    inv.UserInventory.ReserveAmmo[kvp.Key] = 0;
-                    inv.SendAmmoNextFrame = true;
+                    player.Ammo[kvp.Key] = 0;
+                    player.Inventory.SendAmmoNextFrame = true;
                     while (num2 > 0)
                     {
                         PickupSyncInfo pickupSyncInfo = default(PickupSyncInfo);
                         pickupSyncInfo.ItemId = kvp.Key;
                         pickupSyncInfo.Serial = ItemSerialGenerator.GenerateNext();
                         pickupSyncInfo.Weight = value2.Weight;
-                        pickupSyncInfo.Position = inv.transform.position;
-                        PickupSyncInfo psi = pickupSyncInfo;
+                        pickupSyncInfo.Position = rooms[UnityEngine.Random.Range(0, rooms.Count)].Position + new Vector3(0, 2, 0);
                         AmmoPickup ammoPickup2;
-                        if ((object)(ammoPickup2 = inv.ServerCreatePickup(value2, psi) as AmmoPickup) != null)
+                        if ((ammoPickup2 = player.Inventory.ServerCreatePickup(value2, pickupSyncInfo) as AmmoPickup) != null)
                         {
                             ammoPickup2.NetworkSavedAmmo = (ushort)Mathf.Min(ammoPickup2.MaxAmmo, num2);
                             num2 -= ammoPickup2.SavedAmmo;
-                            ammoPickup2.transform.position = rooms[UnityEngine.Random.Range(0, rooms.Count)].Position + new Vector3(0, 2, 0);
                         }
                         else
                         {
