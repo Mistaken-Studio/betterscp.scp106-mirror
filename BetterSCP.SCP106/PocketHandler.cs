@@ -6,6 +6,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Exiled.API.Enums;
 using Exiled.API.Features;
 using InventorySystem;
@@ -13,6 +14,7 @@ using InventorySystem.Items;
 using InventorySystem.Items.Firearms.Ammo;
 using InventorySystem.Items.Pickups;
 using MEC;
+using Mirror;
 using Mistaken.API;
 using Mistaken.API.Diagnostics;
 using Mistaken.API.Extensions;
@@ -58,9 +60,15 @@ namespace Mistaken.BetterSCP.SCP106
         internal static void OnKilledINPocket(Player player)
         {
             ThrowItems(player);
+
             try
             {
-                Exiled.API.Features.Ragdoll.Spawn(player, new UniversalDamageHandler(-1f, DeathTranslations.PocketDecay));
+                GameObject model_ragdoll = player.ReferenceHub.characterClassManager.CurRole.model_ragdoll;
+                if (!(model_ragdoll == null) && UnityEngine.Object.Instantiate(model_ragdoll).TryGetComponent<Ragdoll>(out var component))
+                {
+                    component.NetworkInfo = new RagdollInfo(player.ReferenceHub, new UniversalDamageHandler(-1f, DeathTranslations.PocketDecay), Room.List.ToList()[UnityEngine.Random.Range(0, Room.List.Count())].Position + new Vector3(0, 3, 0), model_ragdoll.transform.localRotation);
+                    NetworkServer.Spawn(component.gameObject);
+                }
             }
             catch (System.Exception ex)
             {

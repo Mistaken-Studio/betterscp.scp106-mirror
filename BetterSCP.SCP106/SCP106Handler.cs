@@ -457,7 +457,11 @@ namespace Mistaken.BetterSCP.SCP106
 
         private IEnumerator<float> UpdateGenerators(Player player)
         {
-            yield return Timing.WaitForSeconds(1);
+            yield return Timing.WaitForSeconds(60);
+
+            if (RealPlayers.Any(RoleType.Scp079))
+                yield break;
+
             var generators = Generator.List.ToArray();
             string singleGeneratorMessage = "<color=red>Generator w trakcie aktywacji!</color><br>Znajduje się on w pomieszczeniu:";
             string multipleGeneratorsMessage = "<color=red>Generatory w trakcie aktywacji!</color><br>Znajdują się one w pomieszczeniach:";
@@ -476,7 +480,9 @@ namespace Mistaken.BetterSCP.SCP106
                     string room = "Nie znaleziono";
                     if (RoomTranslations.ContainsKey(generator.Room.Type))
                         room = RoomTranslations[generator.Room.Type];
-                    message += "<br>" + "<color=yellow>" + room + "</color>";
+                    else
+                        room += $" ({generator.Room.Type})";
+                    message += $"<br><color=yellow>{room}</color>";
                 }
 
                 player.SetGUI($"scp106generator", PseudoGUIPosition.BOTTOM, message);
