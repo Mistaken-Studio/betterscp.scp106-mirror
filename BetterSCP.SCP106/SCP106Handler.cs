@@ -7,7 +7,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using Exiled.API.Enums;
-using Exiled.API.Extensions;
 using Exiled.API.Features;
 using MEC;
 using Mistaken.API;
@@ -42,6 +41,7 @@ namespace Mistaken.BetterSCP.SCP106
             Exiled.Events.Handlers.Player.EnteringFemurBreaker += this.Player_EnteringFemurBreaker;
             Exiled.Events.Handlers.Server.WaitingForPlayers += this.Server_WaitingForPlayers;
             Exiled.Events.Handlers.Player.ChangingRole += this.Player_ChangingRole;
+            Exiled.Events.Handlers.Player.InteractingDoor += this.Player_InteractingDoor;
 
             SCPGUIHandler.SCPMessages.Add(RoleType.Scp106, PluginHandler.Instance.Translation.StartMessage);
         }
@@ -58,9 +58,31 @@ namespace Mistaken.BetterSCP.SCP106
             Exiled.Events.Handlers.Player.EnteringFemurBreaker -= this.Player_EnteringFemurBreaker;
             Exiled.Events.Handlers.Server.WaitingForPlayers -= this.Server_WaitingForPlayers;
             Exiled.Events.Handlers.Player.ChangingRole -= this.Player_ChangingRole;
+            Exiled.Events.Handlers.Player.InteractingDoor -= this.Player_InteractingDoor;
 
             SCPGUIHandler.SCPMessages.Remove(RoleType.Scp106);
         }
+
+        private static readonly Dictionary<RoomType, string> RoomTranslations = new Dictionary<RoomType, string>()
+        {
+            { RoomType.HczTesla, "Bramka Tesli" },
+            { RoomType.HczTCross, "Skrzyżowanie typu T" },
+            { RoomType.HczStraight, "Prosty korytarz" },
+            { RoomType.HczServers, "Serwerownia" },
+            { RoomType.HczNuke, "Głowicą nuklearna" },
+            { RoomType.HczHid, "Zbrojownia z MicroHID" },
+            { RoomType.HczEzCheckpoint, "Przejście HCZ-EZ" },
+            { RoomType.HczCurve, "Zakręt" },
+            { RoomType.HczCrossing, "Skrzyżowanie typu X" },
+            { RoomType.HczChkpB, "Winda B do LCZ" },
+            { RoomType.HczChkpA, "Winda A do LCZ" },
+            { RoomType.HczArmory, "Zbrojownia" },
+            { RoomType.Hcz939, "Przechowalnia SCP-939" },
+            { RoomType.Hcz106, "Przechowalnia SCP-106" },
+            { RoomType.Hcz096, "Przechowalnia SCP-096" },
+            { RoomType.Hcz079, "Przechowalnia SCP-079" },
+            { RoomType.Hcz049, "Przechowalnia SCP-049" },
+        };
 
         private static readonly RoomType[] DisallowedRoomTypes = new RoomType[]
         {
@@ -94,10 +116,24 @@ namespace Mistaken.BetterSCP.SCP106
             }
         }
 
+        private void Player_InteractingDoor(Exiled.Events.EventArgs.InteractingDoorEventArgs ev)
+        {
+            if (ev.Player.Role.Type == RoleType.Scp079)
+                return;
+
+            var type = ev.Door.Type;
+            if (type == DoorType.Scp106Primary || type == DoorType.Scp106Secondary || type == DoorType.Scp106Bottom)
+            {
+                if (Generator.List.Where(x => x.IsEngaged).Count() < 2)
+                    ev.IsAllowed = false;
+            }
+        }
+
         private void Player_ChangingRole(Exiled.Events.EventArgs.ChangingRoleEventArgs ev)
         {
             if (ev.NewRole == RoleType.Scp106)
             {
+                this.RunCoroutine(this.UpdateGenerators(ev.Player), "UpdateGenerators");
                 this.CallDelayed(1f, () => ev.Player.ReferenceHub.scp106PlayerScript.NetworkportalPosition = ev.Player.Position);
                 if (Round.ElapsedTime.TotalSeconds < CooldownOnStart)
                     this.RunCoroutine(this.StartCooldown(ev.Player), "LockStart");
@@ -417,6 +453,43 @@ namespace Mistaken.BetterSCP.SCP106
             if (!UnityEngine.Physics.Raycast(room.Position + (Vector3.up / 2), Vector3.down, 5))
                 return false;
             return true;
+        }
+
+        private IEnumerator<float> UpdateGenerators(Player player)
+        {
+            yield return Timing.WaitForSeconds(60);
+
+            if (RealPlayers.Any(RoleType.Scp079))
+                yield break;
+
+            var generators = Generator.List.ToArray();
+            string singleGeneratorMessage = "<color=red>Generator w trakcie aktywacji!</color><br>Znajduje się on w pomieszczeniu:";
+            string multipleGeneratorsMessage = "<color=red>Generatory w trakcie aktywacji!</color><br>Znajdują się one w pomieszczeniach:";
+            while (player.IsConnected && player.Role.Type == RoleType.Scp106)
+            {
+                string message = string.Empty;
+                var runningGenerators = generators.Where(x => x.IsActivating).ToArray();
+
+                if (runningGenerators.Length == 1)
+                    message = singleGeneratorMessage;
+                else if (runningGenerators.Length > 1)
+                    message = multipleGeneratorsMessage;
+
+                foreach (var generator in runningGenerators)
+                {
+                    string room = "Nie znaleziono";
+                    if (RoomTranslations.ContainsKey(generator.Room.Type))
+                        room = RoomTranslations[generator.Room.Type];
+                    else
+                        room += $" ({generator.Room.Type})";
+                    message += $"<br><color=yellow>{room}</color>";
+                }
+
+                player.SetGUI($"scp106generator", PseudoGUIPosition.BOTTOM, message);
+                yield return Timing.WaitForSeconds(1);
+            }
+
+            player.SetGUI($"scp106generator", PseudoGUIPosition.BOTTOM, null);
         }
     }
 }
