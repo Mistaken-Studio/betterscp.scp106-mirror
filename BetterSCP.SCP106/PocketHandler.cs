@@ -42,6 +42,7 @@ namespace Mistaken.BetterSCP.SCP106
             Exiled.Events.Handlers.Server.RoundStarted += this.Server_RoundStarted;
             Exiled.Events.Handlers.Player.FailingEscapePocketDimension += this.Player_FailingEscapePocketDimension;
             Exiled.Events.Handlers.Player.Shooting += this.Player_Shooting;
+            Exiled.Events.Handlers.Player.SpawningRagdoll += this.Player_SpawningRagdoll;
         }
 
         public override void OnDisable()
@@ -54,18 +55,27 @@ namespace Mistaken.BetterSCP.SCP106
             Exiled.Events.Handlers.Server.RoundStarted -= this.Server_RoundStarted;
             Exiled.Events.Handlers.Player.FailingEscapePocketDimension -= this.Player_FailingEscapePocketDimension;
             Exiled.Events.Handlers.Player.Shooting -= this.Player_Shooting;
+            Exiled.Events.Handlers.Player.SpawningRagdoll -= this.Player_SpawningRagdoll;
         }
 
         internal static void OnKilledINPocket(Player player)
         {
             ThrowItems(player);
+            var rooms = Room.List.ToList();
 
             try
             {
                 GameObject model_ragdoll = player.ReferenceHub.characterClassManager.CurRole.model_ragdoll;
                 if (!(model_ragdoll == null) && UnityEngine.Object.Instantiate(model_ragdoll).TryGetComponent<Ragdoll>(out var component))
                 {
-                    component.NetworkInfo = new RagdollInfo(player.ReferenceHub, new UniversalDamageHandler(-1f, DeathTranslations.PocketDecay), Room.List.ToList()[UnityEngine.Random.Range(0, Room.List.Count())].Position + new Vector3(0, 3, 0), model_ragdoll.transform.localRotation);
+                    component.NetworkInfo = new RagdollInfo(
+                        player.ReferenceHub,
+                        new UniversalDamageHandler(-1f, DeathTranslations.PocketDecay),
+                        player.ReferenceHub.characterClassManager.CurClass,
+                        rooms[UnityEngine.Random.Range(0, rooms.Count)].Position + new Vector3(0, 3, 0) + model_ragdoll.transform.localPosition,
+                        player.ReferenceHub.transform.rotation * model_ragdoll.transform.localRotation,
+                        player.ReferenceHub.nicknameSync.DisplayName,
+                        NetworkTime.time);
                     NetworkServer.Spawn(component.gameObject);
                 }
             }
@@ -94,20 +104,18 @@ namespace Mistaken.BetterSCP.SCP106
 
         private static void ThrowItems(Player player)
         {
-            var items = player.Items;
             var rooms = Room.List.ToList();
             DropAllAmmo(player);
-            foreach (var item in items.ToArray())
+            foreach (var item in player.Items.ToArray())
             {
-                if (item.Type == ItemType.MicroHID || item.IsKeycard)
-                {
-                    item.Spawn(player.Position + (Vector3.up * 2));
+                if (item.Type == ItemType.MicroHID)
                     continue;
-                }
 
                 try
                 {
-                    item.Spawn(rooms[UnityEngine.Random.Range(0, rooms.Count)].Position + new Vector3(0, 2, 0));
+                    player.RemoveItem(item);
+                    if (!item.IsKeycard)
+                        item.Spawn(rooms[UnityEngine.Random.Range(0, rooms.Count)].Position + new Vector3(0, 2, 0));
                 }
                 catch (System.Exception e)
                 {
@@ -115,14 +123,12 @@ namespace Mistaken.BetterSCP.SCP106
                     Log.Error(e.StackTrace);
                 }
             }
-
-            player.ClearInventory();
         }
 
         private static void DropAllAmmo(Player player)
         {
             var rooms = Room.List.ToList();
-            foreach (var kvp in player.Ammo)
+            foreach (var kvp in player.Ammo.ToArray())
             {
                 if (InventoryItemLoader.AvailableItems.TryGetValue(kvp.Key, out var value2))
                 {
@@ -141,12 +147,13 @@ namespace Mistaken.BetterSCP.SCP106
                         pickupSyncInfo.ItemId = kvp.Key;
                         pickupSyncInfo.Serial = ItemSerialGenerator.GenerateNext();
                         pickupSyncInfo.Weight = value2.Weight;
-                        pickupSyncInfo.Position = rooms[UnityEngine.Random.Range(0, rooms.Count)].Position + new Vector3(0, 2, 0);
+                        pickupSyncInfo.Position = player.Inventory.transform.position;
                         AmmoPickup ammoPickup2;
                         if ((ammoPickup2 = player.Inventory.ServerCreatePickup(value2, pickupSyncInfo) as AmmoPickup) != null)
                         {
                             ammoPickup2.NetworkSavedAmmo = (ushort)Mathf.Min(ammoPickup2.MaxAmmo, num2);
                             num2 -= ammoPickup2.SavedAmmo;
+                            ammoPickup2.transform.position = rooms[UnityEngine.Random.Range(0, rooms.Count)].Position + new Vector3(0, 2, 0);
                         }
                         else
                         {
@@ -312,6 +319,12 @@ namespace Mistaken.BetterSCP.SCP106
                 OnKilledINPocket(ev.Target);
                 ev.IsAllowed = false;
             }
+        }
+
+        private void Player_SpawningRagdoll(Exiled.Events.EventArgs.SpawningRagdollEventArgs ev)
+        {
+            if (ev.Position.y < -1900)
+                ev.IsAllowed = false;
         }
     }
 }
