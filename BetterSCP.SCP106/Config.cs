@@ -9,8 +9,7 @@ using Mistaken.Updater.Config;
 
 namespace Mistaken.BetterSCP.SCP106
 {
-    /// <inheritdoc/>
-    public class Config : IAutoUpdatableConfig
+    internal class Config : IAutoUpdatableConfig
     {
         /// <inheritdoc/>
         public bool IsEnabled { get; set; } = true;
