@@ -125,7 +125,10 @@ namespace Mistaken.BetterSCP.SCP106
             if (type == DoorType.Scp106Primary || type == DoorType.Scp106Secondary || type == DoorType.Scp106Bottom)
             {
                 if (Generator.List.Where(x => x.IsEngaged).Count() < 2)
+                {
+                    ev.Player.SetGUI("scp106doordenymessage", PseudoGUIPosition.MIDDLE, PluginHandler.Instance.Translation.DoorDenyMessage, 5);
                     ev.IsAllowed = false;
+                }
             }
         }
 
