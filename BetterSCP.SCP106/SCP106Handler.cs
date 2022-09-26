@@ -121,6 +121,9 @@ namespace Mistaken.BetterSCP.SCP106
             if (ev.Player.Role.Type == RoleType.Scp079)
                 return;
 
+            if (ev.Player.IsBypassModeEnabled)
+                return;
+
             var type = ev.Door.Type;
             if (type == DoorType.Scp106Primary || type == DoorType.Scp106Secondary || type == DoorType.Scp106Bottom)
             {
