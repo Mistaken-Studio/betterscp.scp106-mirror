@@ -20,7 +20,7 @@ namespace Mistaken.BetterSCP.SCP106
 
         public override PluginPriority Priority => PluginPriority.Default;
 
-        public override Version RequiredExiledVersion => new Version(5, 0, 0);
+        public override Version RequiredExiledVersion => new (5, 2, 2);
 
 #pragma warning disable SA1202 // Elements should be ordered by access
         private Version version;

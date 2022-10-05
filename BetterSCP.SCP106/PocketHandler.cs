@@ -76,6 +76,7 @@ namespace Mistaken.BetterSCP.SCP106
                         player.ReferenceHub.transform.rotation * model_ragdoll.transform.localRotation,
                         player.ReferenceHub.nicknameSync.DisplayName,
                         NetworkTime.time);
+
                     NetworkServer.Spawn(component.gameObject);
                 }
             }
@@ -113,7 +114,7 @@ namespace Mistaken.BetterSCP.SCP106
 
                 try
                 {
-                    player.RemoveItem(item);
+                    player.RemoveItem(item, false);
                     if (!item.IsKeycard)
                         item.Spawn(rooms[UnityEngine.Random.Range(0, rooms.Count)].Position + new Vector3(0, 2, 0));
                 }
@@ -143,7 +144,7 @@ namespace Mistaken.BetterSCP.SCP106
                     player.Inventory.SendAmmoNextFrame = true;
                     while (num2 > 0)
                     {
-                        PickupSyncInfo pickupSyncInfo = default(PickupSyncInfo);
+                        PickupSyncInfo pickupSyncInfo = default;
                         pickupSyncInfo.ItemId = kvp.Key;
                         pickupSyncInfo.Serial = ItemSerialGenerator.GenerateNext();
                         pickupSyncInfo.Weight = value2.Weight;
@@ -170,9 +171,10 @@ namespace Mistaken.BetterSCP.SCP106
         {
             get
             {
-                if (this.rooms == null)
+                if (this.rooms == null || this.rooms.Length == 0)
                     this.SetRooms();
-                return this.rooms[UnityEngine.Random.Range(0, this.rooms.Length)] ?? this.RandomRoom;
+
+                return this.rooms[UnityEngine.Random.Range(0, this.rooms.Length)];
             }
         }
 
@@ -191,25 +193,23 @@ namespace Mistaken.BetterSCP.SCP106
             }
         }
 
+        private void Server_RoundStarted()
+        {
+            this.RunCoroutine(this.VisiblityHandler(), "VisiblityHandler", true);
+        }
+
         private void SetRooms()
         {
             this.rooms = Room.List.Where(r => !DisallowedRoomTypes.Contains(r.Type) && r != null).ToArray();
         }
 
-        private void Server_RoundStarted()
-        {
-            Log.Info("Setting Rooms");
-            this.SetRooms();
-            this.RunCoroutine(this.VisiblityHandler(), "VisiblityHandler");
-        }
-
         private IEnumerator<float> VisiblityHandler()
         {
             yield return Timing.WaitForSeconds(1);
-            while (Round.IsStarted)
+            while (true)
             {
                 yield return Timing.WaitForSeconds(1);
-                foreach (var player in RealPlayers.List)
+                foreach (var player in RealPlayers.List.ToArray())
                 {
                     if (player.IsHuman && player.Position.y < -1900)
                         player.IsInvisible = true;
@@ -279,10 +279,13 @@ namespace Mistaken.BetterSCP.SCP106
         {
             if (DisallowedRoomTypes.Contains(room.Type))
                 return false;
+
             if (MapPlus.IsLCZDecontaminated(60) && room.Zone == ZoneType.LightContainment)
                 return false;
+
             if (!UnityEngine.Physics.Raycast(room.Position, Vector3.down, 5))
                 return false;
+
             return true;
         }
 
@@ -306,6 +309,7 @@ namespace Mistaken.BetterSCP.SCP106
 
         private void Server_WaitingForPlayers()
         {
+            this.SetRooms();
             InPocket.Clear();
         }
 
@@ -314,7 +318,7 @@ namespace Mistaken.BetterSCP.SCP106
             if (InPocket.Contains(ev.Target.Id))
                 InPocket.Remove(ev.Target.Id);
 
-            if (ev.Target.Position.y < -1900 && !(ev.Handler.Base is CustomReasonDamageHandler))
+            if (ev.Target.Position.y < -1900 && ev.Handler.Base is not CustomReasonDamageHandler)
             {
                 OnKilledINPocket(ev.Target);
                 ev.IsAllowed = false;
