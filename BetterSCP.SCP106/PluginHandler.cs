@@ -14,7 +14,7 @@ namespace Mistaken.BetterSCP.SCP106
     {
         public override string Author => "Mistaken Devs";
 
-        public override string Name => "BetterSCP.SCP106";
+        public override string Name => "BetterSCP-SCP106";
 
         public override string Prefix => "MBSCP-106";
 
