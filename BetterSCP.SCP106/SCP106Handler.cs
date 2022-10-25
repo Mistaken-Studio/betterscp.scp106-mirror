@@ -33,7 +33,7 @@ namespace Mistaken.BetterSCP.SCP106
             Exiled.Events.Handlers.Scp106.Teleporting += this.Scp106_Teleporting;
             Exiled.Events.Handlers.Scp106.CreatingPortal += this.Scp106_CreatingPortal;
             Exiled.Events.Handlers.Scp106.Containing += this.Scp106_Containing;
-            Exiled.Events.Handlers.Server.RoundStarted += this.Server_RoundStarted;
+            Exiled.Events.Handlers.Server.WaitingForPlayers += this.Server_WaitingForPlayers;
             Exiled.Events.Handlers.Map.Decontaminating += this.Map_Decontaminating;
             Exiled.Events.Handlers.Player.FailingEscapePocketDimension += this.Player_FailingEscapePocketDimension;
             Exiled.Events.Handlers.Player.EscapingPocketDimension += this.Player_EscapingPocketDimension;
@@ -49,7 +49,7 @@ namespace Mistaken.BetterSCP.SCP106
             Exiled.Events.Handlers.Scp106.Teleporting -= this.Scp106_Teleporting;
             Exiled.Events.Handlers.Scp106.CreatingPortal -= this.Scp106_CreatingPortal;
             Exiled.Events.Handlers.Scp106.Containing -= this.Scp106_Containing;
-            Exiled.Events.Handlers.Server.RoundStarted -= this.Server_RoundStarted;
+            Exiled.Events.Handlers.Server.WaitingForPlayers -= this.Server_WaitingForPlayers;
             Exiled.Events.Handlers.Map.Decontaminating -= this.Map_Decontaminating;
             Exiled.Events.Handlers.Player.FailingEscapePocketDimension -= this.Player_FailingEscapePocketDimension;
             Exiled.Events.Handlers.Player.EscapingPocketDimension -= this.Player_EscapingPocketDimension;
@@ -104,16 +104,7 @@ namespace Mistaken.BetterSCP.SCP106
 
         private static Room[] _rooms;
 
-        private static Room RandomRoom
-        {
-            get
-            {
-                if (_rooms == null || _rooms.Length == 0)
-                    _rooms = Room.List.Where(r => r != null && !DisallowedRoomTypes.Contains(r.Type)).ToArray();
-
-                return _rooms[UnityEngine.Random.Range(0, _rooms.Length)];
-            }
-        }
+        private static Room RandomRoom => _rooms[UnityEngine.Random.Range(0, _rooms.Length)];
 
         private void Player_InteractingDoor(Exiled.Events.EventArgs.InteractingDoorEventArgs ev)
         {
@@ -220,11 +211,12 @@ namespace Mistaken.BetterSCP.SCP106
             }
         }
 
-        private void Server_RoundStarted()
+        private void Server_WaitingForPlayers()
         {
             _cooldown.Clear();
             _lastRooms.Clear();
             _inTeleportExecution.Clear();
+            _rooms = Room.List.Where(r => !DisallowedRoomTypes.Contains(r.Type) && r != null).ToArray();
         }
 
         private IEnumerator<float> StartCooldown(Player scp)
