@@ -22,7 +22,7 @@ using UnityEngine;
 
 namespace Mistaken.BetterSCP.SCP106
 {
-    internal class PocketHandler : Module
+    internal sealed class PocketHandler : Module
     {
         public PocketHandler(PluginHandler p)
             : base(p)
@@ -89,7 +89,7 @@ namespace Mistaken.BetterSCP.SCP106
             player.Kill(PluginHandler.Instance.Translation.UnluckyMessage);
         }
 
-        private static readonly RoomType[] DisallowedRoomTypes = new RoomType[]
+        private static readonly RoomType[] DisallowedRoomTypes = new[]
         {
             RoomType.EzShelter,
             RoomType.EzCollapsedTunnel,
@@ -99,14 +99,28 @@ namespace Mistaken.BetterSCP.SCP106
             RoomType.Pocket,
         };
 
+        private static Room[] _rooms;
+
         private static new ModuleLogger Log { get; set; }
 
-        private static List<int> InPocket { get; } = new List<int>();
+        private static List<int> InPocket { get; } = new();
+
+        private static Room RandomRoom
+        {
+            get
+            {
+                if (_rooms == null || _rooms.Length == 0)
+                    _rooms = Room.List.Where(r => !DisallowedRoomTypes.Contains(r.Type) && r != null).ToArray();
+
+                return _rooms[UnityEngine.Random.Range(0, _rooms.Length)];
+            }
+        }
 
         private static void ThrowItems(Player player)
         {
             var rooms = Room.List.ToList();
             DropAllAmmo(player);
+
             foreach (var item in player.Items.ToArray())
             {
                 if (item.Type == ItemType.MicroHID)
@@ -115,6 +129,7 @@ namespace Mistaken.BetterSCP.SCP106
                 try
                 {
                     player.RemoveItem(item, false);
+
                     if (!item.IsKeycard)
                         item.Spawn(rooms[UnityEngine.Random.Range(0, rooms.Count)].Position + new Vector3(0, 2, 0));
                 }
@@ -129,6 +144,7 @@ namespace Mistaken.BetterSCP.SCP106
         private static void DropAllAmmo(Player player)
         {
             var rooms = Room.List.ToList();
+
             foreach (var kvp in player.Ammo.ToArray())
             {
                 if (InventoryItemLoader.AvailableItems.TryGetValue(kvp.Key, out var value2))
@@ -142,6 +158,7 @@ namespace Mistaken.BetterSCP.SCP106
                     int num2 = kvp.Value;
                     player.Ammo[kvp.Key] = 0;
                     player.Inventory.SendAmmoNextFrame = true;
+
                     while (num2 > 0)
                     {
                         PickupSyncInfo pickupSyncInfo = default;
@@ -165,19 +182,6 @@ namespace Mistaken.BetterSCP.SCP106
             }
         }
 
-        private Room[] rooms;
-
-        private Room RandomRoom
-        {
-            get
-            {
-                if (this.rooms == null || this.rooms.Length == 0)
-                    this.SetRooms();
-
-                return this.rooms[UnityEngine.Random.Range(0, this.rooms.Length)];
-            }
-        }
-
         private void Player_Shooting(Exiled.Events.EventArgs.ShootingEventArgs ev)
         {
             if (ev.Shooter.IsInPocketDimension)
@@ -198,17 +202,14 @@ namespace Mistaken.BetterSCP.SCP106
             this.RunCoroutine(this.VisiblityHandler(), "VisiblityHandler", true);
         }
 
-        private void SetRooms()
-        {
-            this.rooms = Room.List.Where(r => !DisallowedRoomTypes.Contains(r.Type) && r != null).ToArray();
-        }
-
         private IEnumerator<float> VisiblityHandler()
         {
             yield return Timing.WaitForSeconds(1);
+
             while (true)
             {
                 yield return Timing.WaitForSeconds(1);
+
                 foreach (var player in RealPlayers.List.ToArray())
                 {
                     if (player.IsHuman && player.Position.y < -1900)
@@ -227,18 +228,17 @@ namespace Mistaken.BetterSCP.SCP106
                 return;
             }
 
-            /*if (this.rooms == null)
-                return;
-            int trie = 0;
+            /*int trie = 0;
             bool forceNext = false;
-            Room targetRoom = this.RandomRoom;
+            Room targetRoom = RandomRoom;
             var position = targetRoom.Position + (Vector3.up * 2);
             while (!this.IsRoomOK(targetRoom) || forceNext)
             {
                 forceNext = false;
-                targetRoom = this.RandomRoom;
+                targetRoom = RandomRoom;
                 position = targetRoom.Position + (Vector3.up * 2);
                 trie++;
+
                 if (trie >= 1000)
                 {
                     position = ev.TeleportPosition;
@@ -253,6 +253,7 @@ namespace Mistaken.BetterSCP.SCP106
             ev.TeleportPosition = position;
             ev.IsAllowed = false;
             ev.Player.Position = ev.TeleportPosition;*/
+
             var pec = ev.Player.ReferenceHub.playerEffectsController;
             pec.EnableEffect<CustomPlayerEffects.Flashed>(1);
             pec.EnableEffect<CustomPlayerEffects.Blinded>(2.5f);
@@ -262,11 +263,14 @@ namespace Mistaken.BetterSCP.SCP106
             {
                 PocketDimensionTeleport[] array = PocketDimensionGenerator.PrepTeleports();
                 int exits = GameCore.ConfigFile.ServerConfig.GetInt("pd_exit_count", 2);
+
                 while (exits > 0 && PocketDimensionGenerator.ContainsKiller(array))
                 {
                     int rand = UnityEngine.Random.Range(0, array.Length);
+
                     if (array[rand].GetTeleportType() == global::PocketDimensionTeleport.PDTeleportType.Exit)
                         continue;
+
                     array[rand].SetType(PocketDimensionTeleport.PDTeleportType.Exit);
                     exits--;
                 }
@@ -309,7 +313,6 @@ namespace Mistaken.BetterSCP.SCP106
 
         private void Server_WaitingForPlayers()
         {
-            this.SetRooms();
             InPocket.Clear();
         }
 

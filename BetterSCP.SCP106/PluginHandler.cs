@@ -7,10 +7,11 @@
 using System;
 using Exiled.API.Enums;
 using Exiled.API.Features;
+using Mistaken.Updater.API.Config;
 
 namespace Mistaken.BetterSCP.SCP106
 {
-    internal class PluginHandler : Plugin<Config, Translation>
+    internal sealed class PluginHandler : Plugin<Config, Translation>, IAutoUpdateablePlugin
     {
         public override string Author => "Mistaken Devs";
 
@@ -20,21 +21,13 @@ namespace Mistaken.BetterSCP.SCP106
 
         public override PluginPriority Priority => PluginPriority.Default;
 
-        public override Version RequiredExiledVersion => new (5, 2, 2);
+        public override Version RequiredExiledVersion => new(5, 2, 2);
 
-#pragma warning disable SA1202 // Elements should be ordered by access
-        private Version version;
-
-        public override Version Version
+        public AutoUpdateConfig AutoUpdateConfig => new()
         {
-            get
-            {
-                if (this.version == null)
-                    this.version = this.Assembly.GetName().Version;
-                return this.version;
-            }
-        }
-#pragma warning restore SA1202 // Elements should be ordered by access
+            Type = SourceType.GITLAB,
+            Url = "https://git.mistaken.pl/api/v4/projects/46",
+        };
 
         public override void OnEnabled()
         {
