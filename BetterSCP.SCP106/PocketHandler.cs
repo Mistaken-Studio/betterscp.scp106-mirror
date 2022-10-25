@@ -37,12 +37,12 @@ namespace Mistaken.BetterSCP.SCP106
             Exiled.Events.Handlers.Player.Dying += this.Player_Dying;
             Exiled.Events.Handlers.Player.Hurting += this.Player_Hurting;
             Exiled.Events.Handlers.Player.DroppingItem += this.Player_DroppingItem;
-            Exiled.Events.Handlers.Server.WaitingForPlayers += this.Server_WaitingForPlayers;
             Exiled.Events.Handlers.Player.EscapingPocketDimension += this.Player_EscapingPocketDimension;
-            Exiled.Events.Handlers.Server.RoundStarted += this.Server_RoundStarted;
             Exiled.Events.Handlers.Player.FailingEscapePocketDimension += this.Player_FailingEscapePocketDimension;
             Exiled.Events.Handlers.Player.Shooting += this.Player_Shooting;
             Exiled.Events.Handlers.Player.SpawningRagdoll += this.Player_SpawningRagdoll;
+            Exiled.Events.Handlers.Server.RoundStarted += this.Server_RoundStarted;
+            Exiled.Events.Handlers.Server.WaitingForPlayers += this.Server_WaitingForPlayers;
         }
 
         public override void OnDisable()
@@ -50,12 +50,12 @@ namespace Mistaken.BetterSCP.SCP106
             Exiled.Events.Handlers.Player.Dying -= this.Player_Dying;
             Exiled.Events.Handlers.Player.Hurting -= this.Player_Hurting;
             Exiled.Events.Handlers.Player.DroppingItem -= this.Player_DroppingItem;
-            Exiled.Events.Handlers.Server.WaitingForPlayers -= this.Server_WaitingForPlayers;
             Exiled.Events.Handlers.Player.EscapingPocketDimension -= this.Player_EscapingPocketDimension;
-            Exiled.Events.Handlers.Server.RoundStarted -= this.Server_RoundStarted;
             Exiled.Events.Handlers.Player.FailingEscapePocketDimension -= this.Player_FailingEscapePocketDimension;
             Exiled.Events.Handlers.Player.Shooting -= this.Player_Shooting;
             Exiled.Events.Handlers.Player.SpawningRagdoll -= this.Player_SpawningRagdoll;
+            Exiled.Events.Handlers.Server.RoundStarted -= this.Server_RoundStarted;
+            Exiled.Events.Handlers.Server.WaitingForPlayers -= this.Server_WaitingForPlayers;
         }
 
         internal static void OnKilledINPocket(Player player)
@@ -105,16 +105,7 @@ namespace Mistaken.BetterSCP.SCP106
 
         private static List<int> InPocket { get; } = new();
 
-        private static Room RandomRoom
-        {
-            get
-            {
-                if (_rooms == null || _rooms.Length == 0)
-                    _rooms = Room.List.Where(r => !DisallowedRoomTypes.Contains(r.Type) && r != null).ToArray();
-
-                return _rooms[UnityEngine.Random.Range(0, _rooms.Length)];
-            }
-        }
+        private static Room RandomRoom => _rooms[UnityEngine.Random.Range(0, _rooms.Length)];
 
         private static void ThrowItems(Player player)
         {
@@ -314,6 +305,7 @@ namespace Mistaken.BetterSCP.SCP106
         private void Server_WaitingForPlayers()
         {
             InPocket.Clear();
+            _rooms = Room.List.Where(r => !DisallowedRoomTypes.Contains(r.Type) && r != null).ToArray();
         }
 
         private void Player_Dying(Exiled.Events.EventArgs.DyingEventArgs ev)
