@@ -5,18 +5,15 @@
 // -----------------------------------------------------------------------
 
 using System.ComponentModel;
-using Mistaken.Updater.Config;
+using Exiled.API.Interfaces;
 
 namespace Mistaken.BetterSCP.SCP106
 {
-    internal class Config : IAutoUpdatableConfig
+    internal sealed class Config : IConfig
     {
         public bool IsEnabled { get; set; } = true;
 
         [Description("If true then debug will be displayed")]
-        public bool VerbouseOutput { get; set; }
-
-        [Description("Auto Update Settings")]
-        public System.Collections.Generic.Dictionary<string, string> AutoUpdateConfig { get; set; }
+        public bool VerboseOutput { get; set; }
     }
 }
